@@ -186,3 +186,25 @@ docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway -e OLLAM
 - Модель: `ollama pull gemma3:12b`, затем снова `ollama create tutor -f Modelfile`.
 - Open WebUI: `docker pull ghcr.io/open-webui/open-webui:main`, затем остановить, удалить и создать контейнер той же командой из шага 3 (данные сохранятся в томе `open-webui`):
   `docker stop open-webui` → `docker rm open-webui` → команда из шага 3.
+
+---
+
+## Вариант без Docker (если Docker не может скачать Open WebUI)
+
+Если `docker run` выдаёт ошибку `failed to resolve reference "ghcr.io/open-webui/..."` или `connection attempt failed`, значит Docker не может достучаться до сервера ghcr.io. Тогда Open WebUI можно поставить через Python, Docker не нужен вообще.
+
+1. Скачайте **Python 3.11** (именно 3.11, с новыми версиями Open WebUI может не работать): https://www.python.org/downloads/release/python-3119/ → «Windows installer (64-bit)».
+2. При установке **обязательно поставьте галочку «Add python.exe to PATH»**.
+3. Откройте новое окно PowerShell и выполните:
+   ```
+   py -3.11 -m pip install open-webui
+   ```
+   Скачивается несколько гигабайт, это займёт 10–30 минут.
+4. Первый запуск для проверки:
+   ```
+   open-webui serve --port 3000
+   ```
+   Подождите, пока появится надпись про запуск, и откройте http://localhost:3000. Дальше всё как в шаге 3.5 и шаге 4.
+5. Для ярлыков используйте `Start-Tutor-Python.bat` и `Stop-Tutor-Python.bat` вместо обычных. Docker Desktop можно удалить.
+
+Обновление Open WebUI в этом варианте: `py -3.11 -m pip install -U open-webui`.
