@@ -365,3 +365,52 @@ ollama create tutor -f Modelfile
 
 ### Сколько места освободится на C
 Примерно 15–20 ГБ. Проверить: Проводник → «Этот компьютер».
+
+---
+
+## Удаление моделей Ollama
+
+### Обычный способ
+```
+ollama list
+ollama rm <имя модели>
+```
+Например: `ollama rm qwen3:14b`. Место на диске освобождается сразу.
+
+> Не удаляйте `gemma3:12b` и `bge-m3`, пока пользуетесь репетитором: на `gemma3:12b` построен `tutor`, а `bge-m3` нужна для поиска по учебникам.
+
+### Если `ollama rm` выдаёт ошибку `untrusted mount point`
+
+Ошибка выглядит так:
+```
+Error: CreateFile C:\Users\...\.ollama\models\manifests-v2\ollama.com\library\gemma3\12b:
+The path cannot be traversed because it contains an untrusted mount point.
+```
+Это ошибка Ollama на Windows: новые версии хранят описание модели как **символическую ссылку**, а защита Windows не даёт по ней пройти. Сначала попробуйте обновить Ollama (https://ollama.com/download, установить поверх) и повторить `ollama rm`. Если не помогло — удаляйте вручную.
+
+**Важно:** любая команда `ollama` (даже `ollama list`) сама запускает Ollama в фоне. Поэтому на шагах 1–3 команды `ollama` **не вводите**.
+
+Все команды — в **обычном** PowerShell (не «от имени администратора»). Вместо `gemma3` и `12b` подставьте нужную модель и тег (то, что до и после двоеточия в `ollama list`).
+
+**1. Закрыть Ollama.** Значок ламы в трее → **Quit Ollama**. В Диспетчере задач завершить процессы `ollama` и `ollama app`, если остались.
+
+**2. Удалить ссылку в `manifests-v2`:**
+```powershell
+Get-ChildItem "$env:USERPROFILE\.ollama\models\manifests-v2" -Recurse -Attributes ReparsePoint | Where-Object { $_.FullName -like '*\gemma3\12b' } | ForEach-Object { $_.Delete() }
+```
+(обычные `Remove-Item`, `del` и `rmdir` здесь не работают — пишут «не удаётся найти», хотя ссылка есть)
+
+**3. Удалить запись в старой папке `manifests`:**
+```powershell
+Remove-Item "$env:USERPROFILE\.ollama\models\manifests\registry.ollama.ai\library\gemma3\12b" -Force -ErrorAction SilentlyContinue
+```
+
+Проверить, что записей о модели не осталось (эта команда Ollama не запускает):
+```powershell
+Get-ChildItem "$env:USERPROFILE\.ollama\models" -Directory -Filter "manifests*" | ForEach-Object { Get-ChildItem $_.FullName -Recurse -Force -File } | Select-Object FullName, LinkType
+```
+В списке не должно быть строк с `gemma3\12b`.
+
+**4. Запустить Ollama** (Пуск → Ollama) и проверить `ollama list` — модели в списке нет. В течение минуты Ollama сама удалит ненужные файлы из папки `blobs`, место освободится.
+
+> Если модели перенесены на диск D, вместо `$env:USERPROFILE\.ollama\models` используйте `D:\Ollama\models`.
