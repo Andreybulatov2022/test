@@ -12,6 +12,21 @@ rem Данные чата (аккаунты, история, учебники) �
 set DATA_DIR=C:\Tutor\data
 start "Open WebUI" /min open-webui serve --port 3000
 
-rem Open WebUI запускается 20-60 секунд
-timeout /t 30 >nul
-start http://localhost:3000
+rem Ждём, пока Open WebUI действительно ответит
+echo Жду, пока загрузится чат (обычно 1-2 минуты)...
+set /a tries=0
+:waitwebui
+timeout /t 3 >nul
+set /a tries+=1
+curl -s -f -o nul http://localhost:3000/health
+if not errorlevel 1 goto webuiok
+if %tries% lss 100 goto waitwebui
+echo Чат не запустился за 5 минут. Попробуй ещё раз или позови взрослого.
+pause
+exit /b 1
+:webuiok
+set "CHROME="
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe"
+if defined CHROME (start "" "%CHROME%" http://localhost:3000) else (start "" http://localhost:3000)
